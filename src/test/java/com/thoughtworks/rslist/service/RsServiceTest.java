@@ -199,6 +199,36 @@ class RsServiceTest {
         assertFalse(rsService.buy(trade, 1));
     }
 
+    @Test
+    void shouldReturnFalseWhenRankLessThanRange() {
+        RsEventDto firstRsEventDto = RsEventDto.builder()
+                .rank(1)
+                .amount(0)
+                .build();
+        RsEventDto secondRsEventDto = RsEventDto.builder()
+                .rank(2)
+                .amount(0)
+                .build();
+        List<RsEventDto> rsEventDtoList = new ArrayList<>();
+        rsEventDtoList.add(firstRsEventDto);
+        rsEventDtoList.add(secondRsEventDto);
+
+        int indexLessThanRange = 0;
+
+        Trade trade = Trade.builder()
+                .amount(100)
+                .rank(indexLessThanRange)
+                .build();
+        // given
+        when(rsEventRepository.findById(anyInt()))
+                .thenReturn(Optional.of(secondRsEventDto));
+        when(rsEventRepository.findAll()).thenReturn(rsEventDtoList);
+
+        //when
+        //then
+        assertFalse(rsService.buy(trade, 1));
+    }
+
 
     public boolean buy(Trade trade, int id) {
         Optional<RsEventDto> optionalRsEventDto = rsEventRepository.findById(id);
