@@ -29,6 +29,6 @@ public class RsEventDto {
   private int rank;
   private int amount;
 
-  @OneToMany(mappedBy = "rsEventDto")
+  @OneToMany(cascade = CascadeType.REMOVE, mappedBy = "rsEventDto")
   private List<TradeDto> tradeDtoList;
 }
