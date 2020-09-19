@@ -280,5 +280,16 @@ class RsControllerTest {
             .content(json)
             .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isBadRequest());
+
+    trade = Trade.builder()
+            .amount(100)
+            .rank(0)
+            .build();
+    json = objectMapper.writeValueAsString(trade);
+    mockMvc.perform(post("/rs/buy/{id}", secondRsEventDto.getId())
+            .content(json)
+            .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isBadRequest());
+
   }
 }

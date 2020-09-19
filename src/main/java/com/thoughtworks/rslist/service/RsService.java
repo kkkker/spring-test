@@ -58,7 +58,7 @@ public class RsService {
         }
         RsEventDto newRsEventDto = optionalRsEventDto.get();
         List<RsEventDto> rsEventDtoList = rsEventRepository.findAll();
-        if (rsEventDtoList.size() < trade.getRank()) {
+        if (rsEventDtoList.size() < trade.getRank() || trade.getRank() <= 0) {
             return false;
         }
         rsEventDtoList.sort(Comparator.comparing(RsEventDto::getRank));
