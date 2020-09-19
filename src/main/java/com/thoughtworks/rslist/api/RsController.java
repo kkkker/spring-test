@@ -73,7 +73,7 @@ public class RsController {
   }
 
   @PostMapping("/rs/event")
-  public ResponseEntity addRsEvent(@RequestBody @Valid RsEvent rsEvent) {
+  public ResponseEntity<Object> addRsEvent(@RequestBody @Valid RsEvent rsEvent) {
     Optional<UserDto> userDto = userRepository.findById(rsEvent.getUserId());
     if (!userDto.isPresent()) {
       return ResponseEntity.badRequest().build();
@@ -86,18 +86,20 @@ public class RsController {
             .user(userDto.get())
             .build();
     rsEventRepository.save(build);
-    return ResponseEntity.created(null).build();
+    return ResponseEntity.status(201).build();
   }
 
   @PostMapping("/rs/vote/{id}")
-  public ResponseEntity vote(@PathVariable int id, @RequestBody Vote vote) {
+  public ResponseEntity<Object> vote(@PathVariable int id, @RequestBody Vote vote) {
     rsService.vote(vote, id);
     return ResponseEntity.ok().build();
   }
 
   @PostMapping("/rs/buy/{id}")
-  public ResponseEntity buy(@PathVariable int id, @RequestBody Trade trade){
-    rsService.buy(trade, id);
+  public ResponseEntity<Object> buy(@PathVariable int id, @RequestBody Trade trade){
+    if (!rsService.buy(trade, id)) {
+      return ResponseEntity.badRequest().build();
+    }
     return ResponseEntity.ok().build();
   }
 

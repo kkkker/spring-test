@@ -1,5 +1,7 @@
 package com.thoughtworks.rslist.api;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.thoughtworks.rslist.domain.Trade;
 import com.thoughtworks.rslist.dto.RsEventDto;
 import com.thoughtworks.rslist.dto.UserDto;
 import com.thoughtworks.rslist.dto.VoteDto;
@@ -170,8 +172,7 @@ class RsControllerTest {
         String.format(
             "{\"userId\":%d,\"time\":\"%s\",\"voteNum\":1}",
             save.getId(), LocalDateTime.now().toString());
-    mockMvc
-        .perform(
+    mockMvc.perform(
             post("/rs/vote/{id}", rsEventDto.getId())
                 .content(jsonValue)
                 .contentType(MediaType.APPLICATION_JSON))
@@ -184,5 +185,68 @@ class RsControllerTest {
     List<VoteDto> voteDtos =  voteRepository.findAll();
     assertEquals(voteDtos.size(), 1);
     assertEquals(voteDtos.get(0).getNum(), 1);
+  }
+
+  @Test
+  void shouldBuyRsEventRank() throws Exception {
+    UserDto save = userRepository.save(userDto);
+    RsEventDto firstRsEventDto = RsEventDto.builder()
+            .keyword("无分类")
+            .eventName("第一条事件")
+            .user(save)
+            .rank(rsEventRepository.findAll().size() + 1)
+            .amount(0)
+            .build();
+    firstRsEventDto = rsEventRepository.save(firstRsEventDto);
+    RsEventDto secondRsEventDto = RsEventDto.builder()
+            .keyword("无分类")
+            .eventName("第二条事件")
+            .user(save)
+            .rank(rsEventRepository.findAll().size() + 1)
+            .amount(0)
+            .build();
+    secondRsEventDto = rsEventRepository.save(secondRsEventDto);
+
+    ObjectMapper objectMapper = new ObjectMapper();
+    Trade trade = Trade.builder()
+            .amount(100)
+            .rank(1)
+            .build();
+    String json = objectMapper.writeValueAsString(trade);
+    mockMvc.perform(post("/rs/buy/{id}", secondRsEventDto.getId())
+                    .content(json)
+                    .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk());
+
+    RsEventDto rsEventDto = rsEventRepository.findByRank(1);
+    assertEquals(secondRsEventDto.getId(), rsEventDto.getId());
+    assertEquals(trade.getAmount(), rsEventDto.getAmount());
+    assertEquals(secondRsEventDto.getVoteNum(), rsEventDto.getVoteNum());
+    assertEquals(secondRsEventDto.getUser().getId(), rsEventDto.getUser().getId());
+    assertEquals(secondRsEventDto.getEventName(), rsEventDto.getEventName());
+    assertEquals(secondRsEventDto.getKeyword(), rsEventDto.getKeyword());
+
+    rsEventDto = rsEventRepository.findByRank(2);
+    assertEquals(firstRsEventDto.getId(), rsEventDto.getId());
+    assertEquals(firstRsEventDto.getAmount(), rsEventDto.getAmount());
+    assertEquals(firstRsEventDto.getVoteNum(), rsEventDto.getVoteNum());
+    assertEquals(firstRsEventDto.getUser().getId(), rsEventDto.getUser().getId());
+    assertEquals(firstRsEventDto.getEventName(), rsEventDto.getEventName());
+    assertEquals(firstRsEventDto.getKeyword(), rsEventDto.getKeyword());
+  }
+
+  @Test
+  void shouldNotBuyRsEventRankWithWrongRsEventId() throws Exception {
+    ObjectMapper objectMapper = new ObjectMapper();
+    Trade trade = Trade.builder()
+            .amount(100)
+            .rank(1)
+            .build();
+    String json = objectMapper.writeValueAsString(trade);
+    int wrongId = 100;
+    mockMvc.perform(post("/rs/buy/{id}", wrongId)
+            .content(json)
+            .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isBadRequest());
   }
 }
