@@ -66,6 +66,10 @@ public class RsService {
         if (trade.getAmount() <= oldRsEventDto.getAmount()) {
             return false;
         }
+        if (oldRsEventDto.getAmount() > 0) {
+            rsEventRepository.deleteById(oldRsEventDto.getId());
+            rsEventDtoList.remove(oldRsEventDto);
+        }
         rsEventDtoList.remove(newRsEventDto);
         newRsEventDto.setAmount(trade.getAmount());
         rsEventDtoList.add(trade.getRank() - 1, newRsEventDto);

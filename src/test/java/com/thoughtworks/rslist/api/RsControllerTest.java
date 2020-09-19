@@ -25,6 +25,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -333,5 +334,57 @@ class RsControllerTest {
             .content(json)
             .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void shouldReplacePurchasedOldRsEventWhenByRank() throws Exception {
+    UserDto save = userRepository.save(userDto);
+    RsEventDto firstRsEventDto = RsEventDto.builder()
+            .keyword("无分类")
+            .eventName("第一条事件")
+            .user(save)
+            .rank(rsEventRepository.findAll().size() + 1)
+            .amount(0)
+            .build();
+    firstRsEventDto = rsEventRepository.save(firstRsEventDto);
+    RsEventDto secondRsEventDto = RsEventDto.builder()
+            .keyword("无分类")
+            .eventName("第二条事件")
+            .user(save)
+            .rank(rsEventRepository.findAll().size() + 1)
+            .amount(0)
+            .build();
+    secondRsEventDto = rsEventRepository.save(secondRsEventDto);
+
+    ObjectMapper objectMapper = new ObjectMapper();
+    Trade trade = Trade.builder()
+            .amount(100)
+            .rank(1)
+            .build();
+    String json = objectMapper.writeValueAsString(trade);
+    mockMvc.perform(post("/rs/buy/{id}", secondRsEventDto.getId())
+            .content(json)
+            .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk());
+
+    trade = Trade.builder()
+            .amount(101)
+            .rank(1)
+            .build();
+    json = objectMapper.writeValueAsString(trade);
+    mockMvc.perform(post("/rs/buy/{id}", firstRsEventDto.getId())
+            .content(json)
+            .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk());
+
+    RsEventDto rsEventDto = rsEventRepository.findByRank(1);
+    assertEquals(firstRsEventDto.getId(), rsEventDto.getId());
+    assertEquals(trade.getAmount(), rsEventDto.getAmount());
+    assertEquals(firstRsEventDto.getVoteNum(), rsEventDto.getVoteNum());
+    assertEquals(firstRsEventDto.getUser().getId(), rsEventDto.getUser().getId());
+    assertEquals(firstRsEventDto.getEventName(), rsEventDto.getEventName());
+    assertEquals(firstRsEventDto.getKeyword(), rsEventDto.getKeyword());
+
+    assertEquals(1, rsEventRepository.findAll().size());
   }
 }
