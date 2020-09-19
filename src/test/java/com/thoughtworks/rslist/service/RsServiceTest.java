@@ -229,55 +229,74 @@ class RsServiceTest {
         assertFalse(rsService.buy(trade, 1));
     }
 
+    @Test
+    void shouldReturnFalseWhenGivenLessAmount() {
+        RsEventDto firstRsEventDto = RsEventDto.builder()
+                .rank(1)
+                .amount(100)
+                .build();
+        RsEventDto secondRsEventDto = RsEventDto.builder()
+                .rank(2)
+                .amount(0)
+                .build();
+        List<RsEventDto> rsEventDtoList = new ArrayList<>();
+        rsEventDtoList.add(firstRsEventDto);
+        rsEventDtoList.add(secondRsEventDto);
 
-    public boolean buy(Trade trade, int id) {
-        Optional<RsEventDto> optionalRsEventDto = rsEventRepository.findById(id);
-        if (!optionalRsEventDto.isPresent()) {
-            return false;
-        }
-        RsEventDto newRsEventDto = optionalRsEventDto.get();
-        List<RsEventDto> rsEventDtoList = rsEventRepository.findAll();
-        if (rsEventDtoList.size() < trade.getRank() || trade.getRank() <= 0) {
-            return false;
-        }
-        rsEventDtoList.sort(Comparator.comparing(RsEventDto::getRank));
-        RsEventDto oldRsEventDto = rsEventDtoList.get(trade.getRank() - 1);
-        if (trade.getAmount() <= oldRsEventDto.getAmount()) {
-            return false;
-        }
-        if (oldRsEventDto.getAmount() > 0) {
-            rsEventRepository.deleteById(oldRsEventDto.getId());
-            rsEventDtoList.remove(oldRsEventDto);
-        }
-        rsEventDtoList.remove(newRsEventDto);
-        newRsEventDto.setAmount(trade.getAmount());
-        newRsEventDto.setRank(trade.getRank());
-        rsEventDtoList.add(trade.getRank() - 1, newRsEventDto);
-        updateRsEventRank(rsEventDtoList);
-        tradeRepository.save(TradeDto.builder()
+        int indexLessThanRange = 0;
+
+        Trade trade = Trade.builder()
+                .amount(100)
+                .rank(firstRsEventDto.getRank())
+                .build();
+        // given
+        when(rsEventRepository.findById(anyInt()))
+                .thenReturn(Optional.of(secondRsEventDto));
+        when(rsEventRepository.findAll()).thenReturn(rsEventDtoList);
+
+        //when
+        //then
+        assertFalse(rsService.buy(trade, 1));
+    }
+
+    @Test
+    void shouldReplacePurchasedRsEventWhenBuyRank() {
+        RsEventDto firstRsEventDto = RsEventDto.builder()
+                .rank(1)
+                .amount(100)
+                .build();
+        RsEventDto secondRsEventDto = RsEventDto.builder()
+                .rank(2)
+                .amount(0)
+                .build();
+        List<RsEventDto> rsEventDtoList = new ArrayList<>();
+        rsEventDtoList.add(firstRsEventDto);
+        rsEventDtoList.add(secondRsEventDto);
+
+        Trade trade = Trade.builder()
+                .amount(101)
+                .rank(firstRsEventDto.getRank())
+                .build();
+
+        RsEventDto newSecondRsEventDto = RsEventDto.builder()
+                .rank(trade.getRank())
+                .amount(trade.getAmount())
+                .build();
+        // given
+        when(rsEventRepository.findById(anyInt()))
+                .thenReturn(Optional.of(secondRsEventDto));
+        when(rsEventRepository.findAll()).thenReturn(rsEventDtoList);
+
+        //when
+        rsService.buy(trade, 1);
+        //then
+        verify(rsEventRepository).deleteById(firstRsEventDto.getId());
+        verify(tradeRepository).save(TradeDto.builder()
                 .amount(trade.getAmount())
                 .rank(trade.getRank())
-                .rsEventDto(newRsEventDto)
+                .rsEventDto(newSecondRsEventDto)
                 .build());
-        return true;
+        verify(rsEventRepository).save(newSecondRsEventDto);
     }
 
-    private void updateRsEventRank(List<RsEventDto> rsEventDtoList) {
-        List<RsEventDto> purchasedRsEvents = rsEventDtoList.stream()
-                .filter(rsEventDto -> rsEventDto.getAmount() > 0)
-                .sorted(Comparator.comparing(RsEventDto::getRank))
-                .collect(Collectors.toList());
-
-        List<RsEventDto> rsEvents = rsEventDtoList.stream()
-                .filter(rsEventDto -> rsEventDto.getAmount() <= 0)
-                .sorted(Comparator.comparing(RsEventDto::getVoteNum).reversed())
-                .collect(Collectors.toList());
-        for (RsEventDto purchasedRsEvent : purchasedRsEvents) {
-            rsEvents.add(purchasedRsEvent.getRank() - 1, purchasedRsEvent);
-        }
-        rsEvents.forEach(rsEventDto -> {
-            rsEventDto.setRank(rsEvents.indexOf(rsEventDto) + 1);
-            rsEventRepository.save(rsEventDto);
-        });
-    }
 }

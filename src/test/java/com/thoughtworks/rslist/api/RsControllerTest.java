@@ -352,7 +352,7 @@ class RsControllerTest {
     }
 
     @Test
-    void shouldReplacePurchasedOldRsEventWhenByRank() throws Exception {
+    void shouldReplacePurchasedRsEventWhenBuyRank() throws Exception {
         UserDto save = userRepository.save(userDto);
         RsEventDto firstRsEventDto = RsEventDto.builder()
                 .keyword("无分类")
