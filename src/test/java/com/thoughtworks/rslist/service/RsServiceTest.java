@@ -169,49 +169,35 @@ class RsServiceTest {
         assertFalse(rsService.buy(trade, 1));
     }
 
-  @Test
-  void shouldReturnFalseWhenRankBiggerThanRange() {
-    RsEventDto firstRsEventDto = RsEventDto.builder()
-            .rank(1)
-            .amount(0)
-            .build();
-    RsEventDto secondRsEventDto = RsEventDto.builder()
-            .rank(2)
-            .amount(0)
-            .build();
-    List<RsEventDto> rsEventDtoList = new ArrayList<>();
-    rsEventDtoList.add(firstRsEventDto);
-    rsEventDtoList.add(secondRsEventDto);
+    @Test
+    void shouldReturnFalseWhenRankBiggerThanRange() {
+        RsEventDto firstRsEventDto = RsEventDto.builder()
+                .rank(1)
+                .amount(0)
+                .build();
+        RsEventDto secondRsEventDto = RsEventDto.builder()
+                .rank(2)
+                .amount(0)
+                .build();
+        List<RsEventDto> rsEventDtoList = new ArrayList<>();
+        rsEventDtoList.add(firstRsEventDto);
+        rsEventDtoList.add(secondRsEventDto);
 
-    Trade trade = Trade.builder()
-            .amount(100)
-            .rank(1)
-            .build();
-    RsEventDto newFirstRsEventDto = RsEventDto.builder()
-            .rank(trade.getRank())
-            .amount(trade.getAmount())
-            .build();
-    RsEventDto newSecondRsEventDto = RsEventDto.builder()
-            .rank(trade.getRank())
-            .amount(trade.getAmount())
-            .build();
-    // given
-    when(rsEventRepository.findById(anyInt()))
-            .thenReturn(Optional.of(secondRsEventDto));
-    when(rsEventRepository.findAll()).thenReturn(rsEventDtoList);
+        int indexBiggerThanRange = rsEventDtoList.size() + 1;
 
-    //when
-    rsService.buy(trade, 1);
+        Trade trade = Trade.builder()
+                .amount(100)
+                .rank(indexBiggerThanRange)
+                .build();
+        // given
+        when(rsEventRepository.findById(anyInt()))
+                .thenReturn(Optional.of(secondRsEventDto));
+        when(rsEventRepository.findAll()).thenReturn(rsEventDtoList);
 
-    //then
-    verify(tradeRepository).save(TradeDto.builder()
-            .amount(trade.getAmount())
-            .rank(trade.getRank())
-            .rsEventDto(newSecondRsEventDto)
-            .build());
-    verify(rsEventRepository).save(newSecondRsEventDto);
-    verify(rsEventRepository).save(newFirstRsEventDto);
-  }
+        //when
+        //then
+        assertFalse(rsService.buy(trade, 1));
+    }
 
 
     public boolean buy(Trade trade, int id) {
