@@ -260,7 +260,7 @@ class RsControllerTest {
             .rank(rsEventRepository.findAll().size() + 1)
             .amount(0)
             .build();
-    firstRsEventDto = rsEventRepository.save(firstRsEventDto);
+    rsEventRepository.save(firstRsEventDto);
     RsEventDto secondRsEventDto = RsEventDto.builder()
             .keyword("无分类")
             .eventName("第二条事件")
@@ -291,5 +291,47 @@ class RsControllerTest {
             .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isBadRequest());
 
+  }
+
+  @Test
+  void shouldNotBuyRsEventRankWithWrongAmount() throws Exception {
+    UserDto save = userRepository.save(userDto);
+    RsEventDto firstRsEventDto = RsEventDto.builder()
+            .keyword("无分类")
+            .eventName("第一条事件")
+            .user(save)
+            .rank(rsEventRepository.findAll().size() + 1)
+            .amount(0)
+            .build();
+    firstRsEventDto = rsEventRepository.save(firstRsEventDto);
+    RsEventDto secondRsEventDto = RsEventDto.builder()
+            .keyword("无分类")
+            .eventName("第二条事件")
+            .user(save)
+            .rank(rsEventRepository.findAll().size() + 1)
+            .amount(0)
+            .build();
+    secondRsEventDto = rsEventRepository.save(secondRsEventDto);
+
+    ObjectMapper objectMapper = new ObjectMapper();
+    Trade trade = Trade.builder()
+            .amount(100)
+            .rank(1)
+            .build();
+    String json = objectMapper.writeValueAsString(trade);
+    mockMvc.perform(post("/rs/buy/{id}", secondRsEventDto.getId())
+            .content(json)
+            .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk());
+
+    trade = Trade.builder()
+            .amount(100)
+            .rank(1)
+            .build();
+    json = objectMapper.writeValueAsString(trade);
+    mockMvc.perform(post("/rs/buy/{id}", firstRsEventDto.getId())
+            .content(json)
+            .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isBadRequest());
   }
 }

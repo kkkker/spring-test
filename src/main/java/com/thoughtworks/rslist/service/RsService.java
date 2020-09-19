@@ -62,6 +62,10 @@ public class RsService {
             return false;
         }
         rsEventDtoList.sort(Comparator.comparing(RsEventDto::getRank));
+        RsEventDto oldRsEventDto = rsEventDtoList.get(trade.getRank() - 1);
+        if (trade.getAmount() <= oldRsEventDto.getAmount()) {
+            return false;
+        }
         rsEventDtoList.remove(newRsEventDto);
         newRsEventDto.setAmount(trade.getAmount());
         rsEventDtoList.add(trade.getRank() - 1, newRsEventDto);
