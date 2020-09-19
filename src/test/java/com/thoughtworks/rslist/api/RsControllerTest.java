@@ -3,9 +3,11 @@ package com.thoughtworks.rslist.api;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.thoughtworks.rslist.domain.Trade;
 import com.thoughtworks.rslist.dto.RsEventDto;
+import com.thoughtworks.rslist.dto.TradeDto;
 import com.thoughtworks.rslist.dto.UserDto;
 import com.thoughtworks.rslist.dto.VoteDto;
 import com.thoughtworks.rslist.repository.RsEventRepository;
+import com.thoughtworks.rslist.repository.TradeRepository;
 import com.thoughtworks.rslist.repository.UserRepository;
 import com.thoughtworks.rslist.repository.VoteRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,10 +40,13 @@ class RsControllerTest {
   @Autowired UserRepository userRepository;
   @Autowired RsEventRepository rsEventRepository;
   @Autowired VoteRepository voteRepository;
+  @Autowired
+  TradeRepository tradeRepository;
   private UserDto userDto;
 
   @BeforeEach
   void setUp() {
+    tradeRepository.deleteAll();
     voteRepository.deleteAll();
     rsEventRepository.deleteAll();
     userRepository.deleteAll();
@@ -234,6 +239,12 @@ class RsControllerTest {
     assertEquals(firstRsEventDto.getUser().getId(), rsEventDto.getUser().getId());
     assertEquals(firstRsEventDto.getEventName(), rsEventDto.getEventName());
     assertEquals(firstRsEventDto.getKeyword(), rsEventDto.getKeyword());
+
+    List<TradeDto> tradeDtoList = tradeRepository.findAll();
+    assertEquals(1, tradeDtoList.size());
+    assertEquals(trade.getRank(), tradeDtoList.get(0).getRank());
+    assertEquals(trade.getAmount(), tradeDtoList.get(0).getAmount());
+    assertEquals(secondRsEventDto.getId(), tradeDtoList.get(0).getRsEventDto().getId());
   }
 
   @Test
